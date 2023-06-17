@@ -1,0 +1,23 @@
+# To create the virtualenv in Jupter notebook:
+# python -m ipykernel install --user --name=<"kernel name"> --display-name=<"My Official Kernel Name">
+# https://sesync-ci.github.io/faq/python-virtual-env.html
+
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = ">=1.24.3"
+pandas = ">=2.0.2"
+matplotlib = ">=3.7.1"
+mip = ">=1.15.0"
+ipykernel = ">==6.23.2"
+names = ">=0.3.0"
+
+[dev-packages]
+black = {version = "*", extras = ["jupyter"]}
+isort = "*"
+
+[requires]
+python_version = "3.9"
