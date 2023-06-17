@@ -29,8 +29,8 @@ days: List[datetime.date] = [
     datetime.date.today() + datetime.timedelta(days=v) for v in range(1, n_days + 1)
 ]
 
-for d in days:
-    print(d)
+for p in days:
+    print(p)
 
 # ---------------- #
 # -- Parameters -- #
@@ -60,43 +60,45 @@ csr_productivity: int = 16
 # ------------------ #
 
 # -- Model --
+
+# Create a Model instance
 model = Model("staff-scheduling-part-1")
 
 # -- Sets --
 
-# Create sets of integers, since Python-MIP cannot deal with other data types, i.e. `str` or `datetime.date`
-D: Set[int] = set(range(n_days))
+# Create sets of integers, since Python-MIP cannot deal with other data types, i.e. str or datetime.date
+P: Set[int] = set(range(n_days))
 I: Set[int] = set(range(n_csr_names))
 
 # -- Decision variables --
 
 # Create decision variables; specify type to BINARY
-x = [[model.add_var(var_type=BINARY) for d in D] for i in I]
+x = [[model.add_var(var_type=BINARY) for p in P] for i in I]
 
 # Create derived variables for daily shortages; use default type CONTINUOUS
-y = [model.add_var() for d in D]
+y = [model.add_var() for p in P]
 
 # -- Objective function --
 
 # Minimize the sum of the daily shortages
-model.objective = minimize(xsum(y[d] for d in D))
+model.objective = minimize(xsum(y[p] for p in P))
 
 # -- Constraints --
 
 # Derived variables constraints
-for d in D:
-    model += y[d] >= 0
-    model += y[d] >= daily_customer_volumes[d] - csr_productivity * xsum(
-        x[i][d] for i in I
+for p in P:
+    model += y[p] >= 0
+    model += y[p] >= daily_customer_volumes[p] - csr_productivity * xsum(
+        x[i][p] for i in I
     )
 
 # CSR availability constraints
-for i, d in zip(I, D):
-    model += x[i][d] <= csr_availability[i][d]
+for i, p in zip(I, P):
+    model += x[i][p] <= csr_availability[i][p]
 
 # 5-day workweek constraints
 for i in I:
-    model += xsum(x[i][d] for d in D) <= 5
+    model += xsum(x[i][p] for p in P) <= 5
 
 # Decision variables constraints are omitted since we specify the type to BINARY
 
@@ -126,7 +128,7 @@ print(
 )
 
 # Calculate the daily customer shortages
-daily_customer_shortages: List[int] = [int(y[d].x) for d in D]
+daily_customer_shortages: List[int] = [int(y[p].x) for p in P]
 
 # Plot customer volume and shortage
 fig, ax = plt.subplots(figsize=(18, 4), dpi=100)
@@ -144,7 +146,11 @@ fig.tight_layout()
 plt.savefig(fname="results/part_1_customer_shortage.png")
 
 # Get decision variables, i.e. the CSR schedule
-csr_schedule = np.array([[x[i][d].x for d in D] for i in I])
+csr_schedule = np.array([[x[i][p].x for p in P] for i in I])
+
+_SHIFT_LABELS: Dict[int, str] = {
+    1: "09:00-18:00" + "\n" + "(break 13:00-14:00)",
+}
 
 _SHIFT_LABELS: Dict[int, str] = {
     1: "09:00-18:00" + "\n" + "(break 13:00-14:00)",
@@ -161,22 +167,22 @@ ax.imshow(csr_schedule, cmap=color_map, norm=norm, aspect="auto")
 
 # Add text in the tiles
 for i in I:
-    for d in D:
-        # If CSR i is selected to work during day d, print the schedule
-        if csr_schedule[i][d] == 1:
+    for p in P:
+        # If CSR i is selected to work during day p, print the schedule
+        if csr_schedule[i][p] == 1:
             text = ax.text(
-                d,
+                p,
                 i,
-                _SHIFT_LABELS[csr_schedule[i][d]],
+                _SHIFT_LABELS[csr_schedule[i][p]],
                 size=8,
                 ha="center",
                 va="center",
                 color="white",
             )
-        # If CSR i is not selected to work during day d because we was not available, print "Unavailable"
-        elif csr_schedule[i][d] == 0 and csr_availability[i][d] == 0:
+        # If CSR i is not selected to work during day p because we was not available, print "Unavailable"
+        elif csr_schedule[i][p] == 0 and csr_availability[i][p] == 0:
             text = ax.text(
-                d, i, "Unavailable", size=8, ha="center", va="center", color="black"
+                p, i, "Unavailable", size=8, ha="center", va="center", color="black"
             )
 
 # Remove major ticks
@@ -184,11 +190,11 @@ plt.tick_params(axis="x", which="both", bottom=False)
 plt.tick_params(axis="y", which="both", left=False)
 
 # Add labels in the major tick
-plt.xticks(np.arange(len(D)), days, size=9)
+plt.xticks(np.arange(len(P)), days, size=9)
 plt.yticks(np.arange(len(I)), csr_names, size=9)
 
 # Plot grid on minor axes
-ax.set_xticks([x - 0.5 for x in range(1, len(D))], minor=True)
+ax.set_xticks([x - 0.5 for x in range(1, len(P))], minor=True)
 ax.set_yticks([y - 0.5 for y in range(1, len(I))], minor=True)
 plt.grid(which="minor", ls="-", lw=2, color="white")
 
