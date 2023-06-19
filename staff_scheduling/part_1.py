@@ -93,8 +93,9 @@ for p in P:
     )
 
 # CSR availability constraints
-for i, p in zip(I, P):
-    model += x[i][p] <= csr_availability[i][p]
+for i in I:
+    for p in P:
+        model += x[i][p] <= csr_availability[i][p]
 
 # 5-day workweek constraints
 for i in I:
@@ -166,23 +167,24 @@ fig, ax = plt.subplots(figsize=(12, 6), dpi=200)
 ax.imshow(csr_schedule, cmap=color_map, norm=norm, aspect="auto")
 
 # Add text in the tiles
-for i, p in zip(I, P):
-    # If CSR i is selected to work during day p, print the schedule
-    if csr_schedule[i][p] == 1:
-        text = ax.text(
-            p,
-            i,
-            _SHIFT_LABELS[csr_schedule[i][p]],
-            size=8,
-            ha="center",
-            va="center",
-            color="white",
-        )
-    # If CSR i is not selected to work during day p because we was not available, print "Unavailable"
-    elif csr_schedule[i][p] == 0 and csr_availability[i][p] == 0:
-        text = ax.text(
-            p, i, "Unavailable", size=8, ha="center", va="center", color="black"
-        )
+for i in I:
+    for p in P:
+        # If CSR i is selected to work during day p, print the schedule
+        if csr_schedule[i][p] == 1:
+            text = ax.text(
+                p,
+                i,
+                _SHIFT_LABELS[csr_schedule[i][p]],
+                size=8,
+                ha="center",
+                va="center",
+                color="white",
+            )
+        # If CSR i is not selected to work during day p because we was not available, print "Unavailable"
+        elif csr_schedule[i][p] == 0 and csr_availability[i][p] == 0:
+            text = ax.text(
+                p, i, "Unavailable", size=8, ha="center", va="center", color="black"
+            )
 
 # Remove major ticks
 plt.tick_params(axis="x", which="both", bottom=False)
